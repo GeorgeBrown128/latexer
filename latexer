@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# Check source file is accessable.
+if [[ -f $1 ]]; then
+    echo [ $(date +%H:%M:%S) ] Using file $1
+else
+    echo "File does't exist!"
+    exit
+fi
+
+# Create a temp directory to hold all of the stuff
+workdir=$(mktemp -d)
+
+echo Working in ${workdir}
+
+# Startup message.
+echo [ $(date +%H:%M:%S) ] latexter started.
+
+# Set lastmod to 0 so that we always render on launch.
+lastmod=0
+# Flag to decide if we should open the pdf.
+opened=0
+
+while true; do
+    # Get last modifcaion of source.
+    mod=$(stat -c %Y ${1})
+    # Check if the file has been modified.
+    if [[ mod -gt lastmod ]]; then
+        # Copy the source, and tell minted to work in this directory.
+        sed "s|__OUTPUTDIR__|outputdir=${workdir}|g" ${1} > ${workdir}/${1}
+        echo [ $(date +%H:%M:%S) ] Generating PDF.
+        pdflatex -halt-on-error -shell-escape -interaction=nonstopmode -output-directory ${workdir} ${1}
+        # Open the PDF if it hasn't been opened, and is available.
+        if [[ opened -eq 0 && -r ${workdir}/${1:0:-4}.pdf ]]
+        then
+            xdg-open ${workdir}/${1:0:-4}.pdf
+            opened=1
+        fi
+        if [[ -r ${workdir}/${1:0:-4}.pdf ]]; then
+            cp ${workdir}/${1:0:-4}.pdf .
+            echo [ $(date +%H:%M:%S) ] Done!
+        else
+            echo [ $(date +%H:%M:%S) ] Compilation Failed!
+        fi
+    fi
+    lastmod=${mod}
+    sleep 1
+done
