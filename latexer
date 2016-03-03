@@ -1,11 +1,18 @@
-#!/bin/bash
+#!/bin/bash -u
+
+# Script assumes file fits n.3 convention, so check that the filename is
+# OK before proceeding.
+if [[ ${1: -4} != ".tex" ]]; then
+    echo "Script requires a .tex file!"
+    exit 1
+fi
 
 # Check source file is accessable.
 if [[ -f $1 ]]; then
     echo [ $(date +%H:%M:%S) ] Using file $1
 else
     echo "File does't exist!"
-    exit
+    exit 1
 fi
 
 # Create a temp directory to hold all of the stuff
