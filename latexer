@@ -29,7 +29,8 @@ while true; do
         # Copy the source, and tell minted to work in this directory.
         sed "s|__OUTPUTDIR__|outputdir=${workdir}|g" ${1} > ${workdir}/${1}
         echo [ $(date +%H:%M:%S) ] Generating PDF.
-        pdflatex -halt-on-error -shell-escape -interaction=nonstopmode -output-directory ${workdir} ${1}
+        pdflatex -halt-on-error -shell-escape -interaction=nonstopmode \
+        -file-line-error -output-directory ${workdir} ${1} > /dev/null
         # Open the PDF if it hasn't been opened, and is available.
         if [[ opened -eq 0 && -r ${workdir}/${1:0:-4}.pdf ]]
         then
@@ -40,7 +41,8 @@ while true; do
             cp ${workdir}/${1:0:-4}.pdf .
             echo [ $(date +%H:%M:%S) ] Done!
         else
-            echo [ $(date +%H:%M:%S) ] Compilation Failed!
+            echo [ $(date +%H:%M:%S) ] Compilation Failed with Error:
+            cat ${workdir}/${1:0:-4}.log | grep -A 2 "${workdir}/${1}:.*:"
         fi
     fi
     lastmod=${mod}
