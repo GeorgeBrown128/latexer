@@ -3,25 +3,29 @@
 # Script assumes file fits n.3 convention, so check that the filename is
 # OK before proceeding.
 if [[ ${1: -4} != ".tex" ]]; then
-    echo "Script requires a .tex file!"
+    echo -e "\033[91mScript requires a .tex file!\0330m"
     exit 1
 fi
 
 # Check source file is accessable.
 if [[ -f $1 ]]; then
-    echo [ $(date +%H:%M:%S) ] Using file $1
+    echo -e "\033[92m[ $(date +%H:%M:%S) ] Using file $1\033[0m"
 else
-    echo "File does't exist!"
+    echo -e "\033[91mFile does't exist!\033[0m"
     exit 1
 fi
 
-# Create a temp directory to hold all of the stuff
+# Create a temp directory to hold all of the stuff.
 workdir=$(mktemp -d)
+
+# Store file name and directory variables.
+file=${1%%.*}
+dir=`dirname ${1}`
 
 echo Working in ${workdir}
 
 # Startup message.
-echo [ $(date +%H:%M:%S) ] latexter started.
+echo -e "\033[92m[ $(date +%H:%M:%S) ] latexter started.\033[0m"
 
 # Set lastmod to 0 so that we always render on launch.
 lastmod=0
@@ -35,30 +39,28 @@ function compile {
 }
 
 while true; do
-    # Get last modifcaion of source.
-    mod=$(stat -c %Y ${1})
+    # Get last modifcaion of directory.
+    mod=$(stat -f '%m' ${dir})
     # Check if the file has been modified.
     if [[ mod -gt lastmod ]]; then
         # Copy the source, and tell minted to work in this directory.
         sed "s|__OUTPUTDIR__|outputdir=${workdir}|g" ${1} > ${workdir}/${1}
-        echo [ $(date +%H:%M:%S) ] Generating PDF.
+        echo -e "\033[93m[ $(date +%H:%M:%S) ] Generating PDF\033[0m".
         compile ${workdir} ${1}
         # Open the PDF if it hasn't been opened, and is available.
-        if [[ opened -eq 0 && -r ${workdir}/${1:0:-4}.pdf ]]
+        if [[ opened -eq 0 && -r ${workdir}/${file}.pdf ]]
         then
             # Rebuild for object references.
             compile ${workdir} ${1}
-            xdg-open ${workdir}/${1:0:-4}.pdf > /dev/null 2>&1 &
+            xdg-open ${workdir}/${file}.pdf > /dev/null 2>&1 &
             opened=1
         fi
-        if [[ -r ${workdir}/${1:0:-4}.pdf ]]; then
-            env DISPLAY=":0.0" paplay /usr/share/sounds/freedesktop/stereo/message.oga
-            cp ${workdir}/${1:0:-4}.pdf .
-            echo [ $(date +%H:%M:%S) ] Done!
+        if [[ -r ${workdir}/${file}.pdf ]]; then
+            cp ${workdir}/${file}.pdf .
+            echo -e "\033[92m[ $(date +%H:%M:%S) ] Done!\033[0m"
         else
-            env DISPLAY=":0.0" paplay /usr/share/sounds/freedesktop/stereo/bell.oga
-            echo [ $(date +%H:%M:%S) ] Compilation Failed with Error:
-            cat ${workdir}/${1:0:-4}.log | grep -A 2 "${workdir}/${1}:.*:"
+            echo -e "\033[91m[ $(date +%H:%M:%S) ] Compilation Failed with Error:\033[0m"
+            cat ${workdir}/${file}.log | grep -A 2 "${workdir}/${1}:.*:"
         fi
     fi
     lastmod=${mod}
