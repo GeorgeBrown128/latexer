@@ -40,7 +40,7 @@ function compile {
 
 while true; do
     # Get last modifcaion of directory.
-    mod=$(stat -f '%m' ${dir})
+    mod=$(stat -f '%m' ${1})
     # Check if the file has been modified.
     if [[ mod -gt lastmod ]]; then
         # Copy the source, and tell minted to work in this directory.
